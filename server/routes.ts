@@ -109,11 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertRedditSourceSchema.parse({ ...req.body, userId: DEMO_USER_ID });
       
-      // Check if subreddit exists
-      const exists = await redditService.checkSubredditExists(data.subreddit);
-      if (!exists) {
-        return res.status(400).json({ error: `Subreddit r/${data.subreddit} does not exist or is private` });
-      }
+      // Skip subreddit validation to avoid OAuth issues
 
       const source = await storage.createRedditSource(data);
       res.json(source);

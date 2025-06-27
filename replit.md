@@ -103,7 +103,17 @@ Located in `shared/schema.ts` using Drizzle ORM:
 
 Preferred communication style: Simple, everyday language.
 
+## Known Issues
+
+### Reddit API Access
+- Reddit API is currently returning 403 Blocked errors for both OAuth and public endpoints
+- This appears to be related to Reddit's recent API policy changes or IP-based blocking
+- Workaround: Sample content has been added to test other features
+- Solution: Consider switching to alternative content sources or implementing a Reddit scraping service
+
 ## Changelog
 
-Changelog:
-- June 27, 2025. Initial setup
+- June 27, 2025. Initial setup and migration to Replit
+- June 27, 2025. Successfully configured Gemini AI for description generation
+- June 27, 2025. Added sample content to demonstrate all features
+- June 27, 2025. Identified Reddit API blocking issues
