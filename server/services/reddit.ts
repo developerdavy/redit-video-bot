@@ -59,6 +59,10 @@ export class RedditService {
     this.accessToken = data.access_token;
     this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 minute early
 
+    if (!this.accessToken) {
+      throw new Error('No access token received from Reddit API');
+    }
+
     return this.accessToken;
   }
 
@@ -106,7 +110,7 @@ export class RedditService {
     upvotes: number;
   }>> {
     try {
-      const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=${limit}`;
+      const url = `https://oauth.reddit.com/r/${subreddit}/hot?limit=${limit}`;
       const data: RedditResponse = await this.makeRequest(url);
       
       const videos = data.data.children
@@ -124,21 +128,17 @@ export class RedditService {
       return videos;
     } catch (error) {
       console.error(`Error fetching videos from r/${subreddit}:`, error);
-      throw new Error(`Failed to fetch videos from r/${subreddit}: ${error.message}`);
+      throw new Error(`Failed to fetch videos from r/${subreddit}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   async checkSubredditExists(subreddit: string): Promise<boolean> {
     try {
-      const url = `https://www.reddit.com/r/${subreddit}/about.json`;
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'ContentBot/1.0.0'
-        }
-      });
-      
-      return response.ok;
+      const url = `https://oauth.reddit.com/r/${subreddit}/about`;
+      await this.makeRequest(url);
+      return true;
     } catch (error) {
+      console.error(`Error checking subreddit r/${subreddit}:`, error);
       return false;
     }
   }
