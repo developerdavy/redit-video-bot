@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +13,18 @@ import {
   RefreshCw, 
   Upload,
   Bot,
-  Brain
+  Brain,
+  Download
 } from "lucide-react";
 import { FaReddit } from "react-icons/fa";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { ContentItem } from "@shared/schema";
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats"]
   });
@@ -29,6 +35,61 @@ export default function Dashboard() {
 
   const { data: redditSources = [], isLoading: sourcesLoading } = useQuery({
     queryKey: ["/api/reddit-sources"]
+  });
+
+  // Fetch all active Reddit sources
+  const fetchAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/fetch-all-sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      if (!response.ok) throw new Error("Failed to fetch");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Content Fetched!",
+        description: `Successfully fetched ${data.totalFetched} new videos from ${data.sourcesFetched} Reddit sources.`
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fetch Failed",
+        description: "Failed to fetch Reddit content. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Generate AI descriptions for pending items
+  const generateAIMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/bulk-generate-descriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      if (!response.ok) throw new Error("Failed to generate descriptions");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "AI Descriptions Generated!",
+        description: `Generated descriptions for ${data.processed} videos using Gemini AI.`
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "AI Generation Failed",
+        description: "Failed to generate AI descriptions. Please check your Gemini API key.",
+        variant: "destructive"
+      });
+    }
   });
 
   const recentItems = contentItems.slice(0, 3);
@@ -43,16 +104,29 @@ export default function Dashboard() {
             <p className="text-gray-600">Manage your YouTube content automation</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button className="bg-success-green hover:bg-green-600 text-white">
-              <Plus size={16} className="mr-2" />
-              New Campaign
+            <Button 
+              onClick={() => fetchAllMutation.mutate()}
+              disabled={fetchAllMutation.isPending}
+              variant="outline"
+              className="border-youtube-red text-youtube-red hover:bg-youtube-red hover:text-white"
+            >
+              <Download size={16} className="mr-2" />
+              {fetchAllMutation.isPending ? "Fetching..." : "Fetch Reddit Content"}
+            </Button>
+            <Button 
+              onClick={() => generateAIMutation.mutate()}
+              disabled={generateAIMutation.isPending}
+              className="bg-success-green hover:bg-green-600 text-white"
+            >
+              <Brain size={16} className="mr-2" />
+              {generateAIMutation.isPending ? "Generating..." : "Generate AI Descriptions"}
             </Button>
             <div className="relative">
               <Button variant="ghost" size="sm">
                 <Bell size={16} />
               </Button>
               <span className="absolute -top-1 -right-1 bg-youtube-red text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                3
+                {contentItems.filter(item => item.status === "pending").length}
               </span>
             </div>
           </div>

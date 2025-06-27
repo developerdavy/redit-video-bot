@@ -22,6 +22,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk fetch from all active sources
+  app.post("/api/fetch-all-sources", async (req, res) => {
+    try {
+      const sources = await storage.getRedditSources(DEMO_USER_ID);
+      const activeSources = sources.filter(source => source.isActive);
+      
+      if (activeSources.length === 0) {
+        return res.json({ message: "No active Reddit sources found", totalFetched: 0 });
+      }
+
+      let totalFetched = 0;
+      const results = [];
+
+      for (const source of activeSources) {
+        try {
+          const videos = await redditService.getPopularVideos(source.subreddit, 5);
+          
+          for (const video of videos) {
+            try {
+              // Check if we already have this video
+              const existingItems = await storage.getContentItems(DEMO_USER_ID);
+              const exists = existingItems.find(item => item.redditId === video.id);
+              
+              if (!exists) {
+                await storage.createContentItem({
+                  userId: DEMO_USER_ID,
+                  redditSourceId: source.id,
+                  redditId: video.id,
+                  title: video.title,
+                  videoUrl: video.videoUrl,
+                  thumbnailUrl: video.thumbnailUrl,
+                  duration: video.duration,
+                  upvotes: video.upvotes,
+                  status: "pending"
+                });
+                totalFetched++;
+                results.push({ 
+                  source: source.subreddit,
+                  id: video.id, 
+                  title: video.title, 
+                  upvotes: video.upvotes,
+                  success: true 
+                });
+              }
+            } catch (error) {
+              results.push({ 
+                source: source.subreddit,
+                id: video.id, 
+                title: video.title, 
+                success: false, 
+                error: (error as Error).message 
+              });
+            }
+          }
+        } catch (error) {
+          results.push({ 
+            source: source.subreddit,
+            success: false, 
+            error: (error as Error).message 
+          });
+        }
+      }
+
+      res.json({
+        totalFetched,
+        sourcesFetched: activeSources.length,
+        results
+      });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Reddit sources endpoints
   app.get("/api/reddit-sources", async (req, res) => {
     try {

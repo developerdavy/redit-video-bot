@@ -48,15 +48,13 @@ export default function Sidebar() {
             
             return (
               <li key={item.name}>
-                <Link href={item.href}>
-                  <a className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive 
-                      ? "bg-youtube-red text-white" 
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}>
-                    <IconComponent size={18} />
-                    <span>{item.name}</span>
-                  </a>
+                <Link href={item.href} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive 
+                    ? "bg-youtube-red text-white" 
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}>
+                  <IconComponent size={18} />
+                  <span>{item.name}</span>
                 </Link>
               </li>
             );

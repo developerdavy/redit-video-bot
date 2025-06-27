@@ -12,6 +12,8 @@ import {
   type Campaign,
   type InsertCampaign
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -71,6 +73,31 @@ export class MemStorage implements IStorage {
 
     // Create default user for demo
     this.createUser({ username: "demo", password: "demo" });
+    
+    // Add demo Reddit sources synchronously
+    this.seedDemoSources();
+  }
+
+  private seedDemoSources() {
+    // Add popular video subreddits
+    const demoSources = [
+      { subreddit: "funny", isActive: true },
+      { subreddit: "nextfuckinglevel", isActive: true },
+      { subreddit: "PublicFreakout", isActive: false },
+      { subreddit: "interestingasfuck", isActive: true }
+    ];
+
+    demoSources.forEach(source => {
+      const id = this.currentRedditSourceId++;
+      const redditSource = {
+        id,
+        userId: 1,
+        subreddit: source.subreddit,
+        isActive: source.isActive,
+        createdAt: new Date()
+      };
+      this.redditSources.set(id, redditSource);
+    });
   }
 
   // Users
@@ -225,4 +252,159 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  // Reddit Sources
+  async getRedditSources(userId: number): Promise<RedditSource[]> {
+    return await db.select().from(redditSources).where(eq(redditSources.userId, userId));
+  }
+
+  async getRedditSource(id: number): Promise<RedditSource | undefined> {
+    const [source] = await db.select().from(redditSources).where(eq(redditSources.id, id));
+    return source || undefined;
+  }
+
+  async createRedditSource(insertSource: InsertRedditSource): Promise<RedditSource> {
+    const [source] = await db
+      .insert(redditSources)
+      .values(insertSource)
+      .returning();
+    return source;
+  }
+
+  async updateRedditSource(id: number, updates: Partial<RedditSource>): Promise<RedditSource | undefined> {
+    const [source] = await db
+      .update(redditSources)
+      .set(updates)
+      .where(eq(redditSources.id, id))
+      .returning();
+    return source || undefined;
+  }
+
+  async deleteRedditSource(id: number): Promise<boolean> {
+    const result = await db
+      .delete(redditSources)
+      .where(eq(redditSources.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Content Items
+  async getContentItems(userId: number, status?: string): Promise<ContentItem[]> {
+    if (status) {
+      return await db.select().from(contentItems).where(
+        and(eq(contentItems.userId, userId), eq(contentItems.status, status))
+      );
+    }
+    return await db.select().from(contentItems).where(eq(contentItems.userId, userId));
+  }
+
+  async getContentItem(id: number): Promise<ContentItem | undefined> {
+    const [item] = await db.select().from(contentItems).where(eq(contentItems.id, id));
+    return item || undefined;
+  }
+
+  async createContentItem(insertItem: InsertContentItem): Promise<ContentItem> {
+    const [item] = await db
+      .insert(contentItems)
+      .values(insertItem)
+      .returning();
+    return item;
+  }
+
+  async updateContentItem(id: number, updates: Partial<ContentItem>): Promise<ContentItem | undefined> {
+    const [item] = await db
+      .update(contentItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(contentItems.id, id))
+      .returning();
+    return item || undefined;
+  }
+
+  async deleteContentItem(id: number): Promise<boolean> {
+    const result = await db
+      .delete(contentItems)
+      .where(eq(contentItems.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Campaigns
+  async getCampaigns(userId: number): Promise<Campaign[]> {
+    return await db.select().from(campaigns).where(eq(campaigns.userId, userId));
+  }
+
+  async getCampaign(id: number): Promise<Campaign | undefined> {
+    const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, id));
+    return campaign || undefined;
+  }
+
+  async createCampaign(insertCampaign: InsertCampaign): Promise<Campaign> {
+    const [campaign] = await db
+      .insert(campaigns)
+      .values(insertCampaign)
+      .returning();
+    return campaign;
+  }
+
+  async updateCampaign(id: number, updates: Partial<Campaign>): Promise<Campaign | undefined> {
+    const [campaign] = await db
+      .update(campaigns)
+      .set(updates)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return campaign || undefined;
+  }
+
+  async deleteCampaign(id: number): Promise<boolean> {
+    const result = await db
+      .delete(campaigns)
+      .where(eq(campaigns.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Stats
+  async getStats(userId: number): Promise<{
+    videosGenerated: number;
+    redditSources: number;
+    successRate: number;
+    queueLength: number;
+  }> {
+    const totalItems = await db.select().from(contentItems).where(eq(contentItems.userId, userId));
+    const totalSources = await db.select().from(redditSources).where(eq(redditSources.userId, userId));
+    const approvedItems = await db.select().from(contentItems).where(
+      and(eq(contentItems.userId, userId), eq(contentItems.status, "approved"))
+    );
+    const pendingItems = await db.select().from(contentItems).where(
+      and(eq(contentItems.userId, userId), eq(contentItems.status, "pending"))
+    );
+
+    const totalCount = totalItems.length;
+    const approvedCount = approvedItems.length;
+    
+    return {
+      videosGenerated: approvedCount,
+      redditSources: totalSources.length,
+      successRate: totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0,
+      queueLength: pendingItems.length
+    };
+  }
+}
+
+export const storage = new DatabaseStorage();
