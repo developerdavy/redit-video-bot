@@ -45,7 +45,7 @@ export class RedditService {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${authString}`,
-        'User-Agent': 'ContentBot/1.0.0 by /u/ContentBot',
+        'User-Agent': 'script:ContentBot:v1.0.0 (by /u/ContentBot)',
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: 'grant_type=client_credentials'
@@ -84,7 +84,7 @@ export class RedditService {
         const retryResponse = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${newToken}`,
-            'User-Agent': 'ContentBot/1.0.0 by /u/ContentBot'
+            'User-Agent': 'script:ContentBot:v1.0.0 (by /u/ContentBot)'
           }
         });
         
@@ -123,7 +123,7 @@ export class RedditService {
         const publicUrl = `https://www.reddit.com/r/${subreddit}/hot.json?limit=${limit}`;
         const response = await fetch(publicUrl, {
           headers: {
-            'User-Agent': 'web:ContentBot:v1.0.0 (by /u/ContentBot)'
+            'User-Agent': 'script:ContentBot:v1.0.0 (by /u/ContentBot)'
           }
         });
         
@@ -165,7 +165,7 @@ export class RedditService {
       const url = `https://www.reddit.com/r/${subreddit}/about.json`;
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'web:ContentBot:v1.0.0 (by /u/ContentBot)'
+          'User-Agent': 'script:ContentBot:v1.0.0 (by /u/ContentBot)'
         }
       });
       
