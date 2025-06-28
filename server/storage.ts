@@ -64,20 +64,24 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private redditSources: Map<number, RedditSource>;
+  private tiktokSources: Map<number, TiktokSource>;
   private contentItems: Map<number, ContentItem>;
   private campaigns: Map<number, Campaign>;
   private currentUserId: number;
   private currentRedditSourceId: number;
+  private currentTiktokSourceId: number;
   private currentContentItemId: number;
   private currentCampaignId: number;
 
   constructor() {
     this.users = new Map();
     this.redditSources = new Map();
+    this.tiktokSources = new Map();
     this.contentItems = new Map();
     this.campaigns = new Map();
     this.currentUserId = 1;
     this.currentRedditSourceId = 1;
+    this.currentTiktokSourceId = 1;
     this.currentContentItemId = 1;
     this.currentCampaignId = 1;
 
@@ -160,6 +164,40 @@ export class MemStorage implements IStorage {
     return this.redditSources.delete(id);
   }
 
+  // TikTok Sources
+  async getTiktokSources(userId: number): Promise<TiktokSource[]> {
+    return Array.from(this.tiktokSources.values()).filter(source => source.userId === userId);
+  }
+
+  async getTiktokSource(id: number): Promise<TiktokSource | undefined> {
+    return this.tiktokSources.get(id);
+  }
+
+  async createTiktokSource(insertSource: InsertTiktokSource): Promise<TiktokSource> {
+    const id = this.currentTiktokSourceId++;
+    const source: TiktokSource = { 
+      ...insertSource, 
+      id, 
+      isActive: insertSource.isActive ?? true,
+      createdAt: new Date() 
+    };
+    this.tiktokSources.set(id, source);
+    return source;
+  }
+
+  async updateTiktokSource(id: number, updates: Partial<TiktokSource>): Promise<TiktokSource | undefined> {
+    const source = this.tiktokSources.get(id);
+    if (!source) return undefined;
+    
+    const updated = { ...source, ...updates };
+    this.tiktokSources.set(id, updated);
+    return updated;
+  }
+
+  async deleteTiktokSource(id: number): Promise<boolean> {
+    return this.tiktokSources.delete(id);
+  }
+
   // Content Items
   async getContentItems(userId: number, status?: string): Promise<ContentItem[]> {
     return Array.from(this.contentItems.values()).filter(item => {
@@ -179,6 +217,8 @@ export class MemStorage implements IStorage {
     const item: ContentItem = { 
       ...insertItem, 
       id, 
+      redditSourceId: insertItem.redditSourceId ?? null,
+      tiktokSourceId: insertItem.tiktokSourceId ?? null,
       status: insertItem.status ?? "pending",
       thumbnailUrl: insertItem.thumbnailUrl ?? null,
       duration: insertItem.duration ?? null,
@@ -244,18 +284,18 @@ export class MemStorage implements IStorage {
   // Stats
   async getStats(userId: number): Promise<{
     videosGenerated: number;
-    redditSources: number;
+    tiktokSources: number;
     successRate: number;
     queueLength: number;
   }> {
     const userContentItems = await this.getContentItems(userId);
-    const userRedditSources = await this.getRedditSources(userId);
+    const userTiktokSources = await this.getTiktokSources(userId);
     const queueItems = await this.getContentItems(userId, "pending");
     const approvedItems = userContentItems.filter(item => item.status === "approved" || item.status === "posted");
     
     return {
       videosGenerated: userContentItems.length,
-      redditSources: userRedditSources.filter(source => source.isActive).length,
+      tiktokSources: userTiktokSources.filter(source => source.isActive).length,
       successRate: userContentItems.length > 0 ? (approvedItems.length / userContentItems.length) * 100 : 0,
       queueLength: queueItems.length
     };
