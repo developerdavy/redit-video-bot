@@ -1,12 +1,15 @@
 import { 
   users, 
   redditSources, 
+  tiktokSources,
   contentItems, 
   campaigns,
   type User, 
   type InsertUser,
   type RedditSource,
   type InsertRedditSource,
+  type TiktokSource,
+  type InsertTiktokSource,
   type ContentItem,
   type InsertContentItem,
   type Campaign,
@@ -27,6 +30,13 @@ export interface IStorage {
   createRedditSource(source: InsertRedditSource): Promise<RedditSource>;
   updateRedditSource(id: number, updates: Partial<RedditSource>): Promise<RedditSource | undefined>;
   deleteRedditSource(id: number): Promise<boolean>;
+
+  // TikTok Sources
+  getTiktokSources(userId: number): Promise<TiktokSource[]>;
+  getTiktokSource(id: number): Promise<TiktokSource | undefined>;
+  createTiktokSource(source: InsertTiktokSource): Promise<TiktokSource>;
+  updateTiktokSource(id: number, updates: Partial<TiktokSource>): Promise<TiktokSource | undefined>;
+  deleteTiktokSource(id: number): Promise<boolean>;
 
   // Content Items
   getContentItems(userId: number, status?: string): Promise<ContentItem[]>;
@@ -303,6 +313,40 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(redditSources)
       .where(eq(redditSources.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // TikTok Sources
+  async getTiktokSources(userId: number): Promise<TiktokSource[]> {
+    return await db.select().from(tiktokSources).where(eq(tiktokSources.userId, userId));
+  }
+
+  async getTiktokSource(id: number): Promise<TiktokSource | undefined> {
+    const [source] = await db.select().from(tiktokSources).where(eq(tiktokSources.id, id));
+    return source || undefined;
+  }
+
+  async createTiktokSource(insertSource: InsertTiktokSource): Promise<TiktokSource> {
+    const [source] = await db
+      .insert(tiktokSources)
+      .values(insertSource)
+      .returning();
+    return source;
+  }
+
+  async updateTiktokSource(id: number, updates: Partial<TiktokSource>): Promise<TiktokSource | undefined> {
+    const [source] = await db
+      .update(tiktokSources)
+      .set(updates)
+      .where(eq(tiktokSources.id, id))
+      .returning();
+    return source || undefined;
+  }
+
+  async deleteTiktokSource(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tiktokSources)
+      .where(eq(tiktokSources.id, id));
     return (result.rowCount || 0) > 0;
   }
 

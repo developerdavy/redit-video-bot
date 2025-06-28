@@ -16,11 +16,20 @@ export const redditSources = pgTable("reddit_sources", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const tiktokSources = pgTable("tiktok_sources", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  hashtag: text("hashtag").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const contentItems = pgTable("content_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  redditSourceId: integer("reddit_source_id").notNull(),
-  redditId: text("reddit_id").notNull().unique(),
+  redditSourceId: integer("reddit_source_id"),
+  tiktokSourceId: integer("tiktok_source_id"),
+  sourceId: text("source_id").notNull().unique(), // reddit_id or tiktok_id
   title: text("title").notNull(),
   videoUrl: text("video_url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
@@ -54,6 +63,11 @@ export const insertRedditSourceSchema = createInsertSchema(redditSources).omit({
   createdAt: true,
 });
 
+export const insertTiktokSourceSchema = createInsertSchema(tiktokSources).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertContentItemSchema = createInsertSchema(contentItems).omit({
   id: true,
   createdAt: true,
@@ -71,6 +85,9 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type RedditSource = typeof redditSources.$inferSelect;
 export type InsertRedditSource = z.infer<typeof insertRedditSourceSchema>;
+
+export type TiktokSource = typeof tiktokSources.$inferSelect;
+export type InsertTiktokSource = z.infer<typeof insertTiktokSourceSchema>;
 
 export type ContentItem = typeof contentItems.$inferSelect;
 export type InsertContentItem = z.infer<typeof insertContentItemSchema>;

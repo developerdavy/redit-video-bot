@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { redditService } from "./services/reddit";
 import { geminiService } from "./services/gemini";
 import { youtubeService } from "./services/youtube";
-import { insertRedditSourceSchema, insertContentItemSchema, insertCampaignSchema } from "@shared/schema";
+import { insertRedditSourceSchema, insertTiktokSourceSchema, insertContentItemSchema, insertCampaignSchema } from "@shared/schema";
+import { tiktokService } from "./services/tiktok";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -43,13 +44,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               // Check if we already have this video
               const existingItems = await storage.getContentItems(DEMO_USER_ID);
-              const exists = existingItems.find(item => item.redditId === video.id);
+              const exists = existingItems.find(item => item.sourceId === video.id);
               
               if (!exists) {
                 await storage.createContentItem({
                   userId: DEMO_USER_ID,
                   redditSourceId: source.id,
-                  redditId: video.id,
+                  sourceId: video.id,
                   title: video.title,
                   videoUrl: video.videoUrl,
                   thumbnailUrl: video.thumbnailUrl,
@@ -230,13 +231,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const video of videos) {
             // Check if we already have this video
             const existing = await storage.getContentItems(DEMO_USER_ID);
-            const alreadyExists = existing.some(item => item.redditId === video.id);
+            const alreadyExists = existing.some(item => item.sourceId === video.id);
             
             if (!alreadyExists) {
               await storage.createContentItem({
                 userId: DEMO_USER_ID,
                 redditSourceId: source.id,
-                redditId: video.id,
+                sourceId: video.id,
                 title: video.title,
                 videoUrl: video.videoUrl,
                 thumbnailUrl: video.thumbnailUrl,
