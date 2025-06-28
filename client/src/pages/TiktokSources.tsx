@@ -43,7 +43,8 @@ export default function TiktokSources() {
     mutationFn: async (data: FormData) => {
       console.log("Mutation starting with data:", data);
       try {
-        const result = await apiRequest("POST", "/api/tiktok-sources", data);
+        const response = await apiRequest("POST", "/api/tiktok-sources", data);
+        const result = await response.json();
         console.log("Mutation successful:", result);
         return result;
       } catch (error) {
@@ -51,10 +52,12 @@ export default function TiktokSources() {
         throw error;
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       console.log("onSuccess triggered:", result);
-      queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      // Invalidate and refetch the data
+      await queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      // Close dialog and reset form
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -65,8 +68,8 @@ export default function TiktokSources() {
     onError: (error: Error) => {
       console.error("onError triggered:", error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error", 
+        description: error.message || "Failed to add hashtag",
         variant: "destructive",
       });
     },
@@ -74,7 +77,8 @@ export default function TiktokSources() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      return apiRequest("PATCH", `/api/tiktok-sources/${id}`, { isActive });
+      const response = await apiRequest("PATCH", `/api/tiktok-sources/${id}`, { isActive });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
@@ -94,7 +98,8 @@ export default function TiktokSources() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/tiktok-sources/${id}`);
+      const response = await apiRequest("DELETE", `/api/tiktok-sources/${id}`);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
@@ -114,7 +119,9 @@ export default function TiktokSources() {
 
   const fetchMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("POST", `/api/tiktok-sources/${id}/fetch`) as Promise<{ fetched: number; total: number }>;
+      const response = await apiRequest("POST", `/api/tiktok-sources/${id}/fetch`);
+      const result = await response.json();
+      return result as { fetched: number; total: number };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
@@ -133,8 +140,22 @@ export default function TiktokSources() {
   });
 
   const onSubmit = (data: FormData) => {
+    console.log("Form submission triggered");
     console.log("Form submission data:", data);
     console.log("Form validation errors:", form.formState.errors);
+    console.log("Form is valid:", form.formState.isValid);
+    console.log("Form values:", form.getValues());
+    
+    if (!data.hashtag || data.hashtag.trim() === "") {
+      console.error("Hashtag is empty");
+      toast({
+        title: "Error",
+        description: "Please enter a hashtag",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createMutation.mutate(data);
   };
 
