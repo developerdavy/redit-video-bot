@@ -14,12 +14,13 @@ import {
   Upload,
   Bot,
   Brain,
-  Download
+  Download,
+  Hash
 } from "lucide-react";
-import { FaReddit } from "react-icons/fa";
+import { FaTiktok } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { ContentItem } from "@shared/schema";
+import type { ContentItem, TiktokSource } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -33,36 +34,8 @@ export default function Dashboard() {
     queryKey: ["/api/content-items"]
   });
 
-  const { data: redditSources = [], isLoading: sourcesLoading } = useQuery({
-    queryKey: ["/api/reddit-sources"]
-  });
-
-  // Fetch all active Reddit sources
-  const fetchAllMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/fetch-all-sources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
-      });
-      if (!response.ok) throw new Error("Failed to fetch");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Content Fetched!",
-        description: `Successfully fetched ${data.totalFetched} new videos from ${data.sourcesFetched} Reddit sources.`
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Fetch Failed",
-        description: "Failed to fetch Reddit content. Please try again.",
-        variant: "destructive"
-      });
-    }
+  const { data: tiktokSources = [], isLoading: sourcesLoading } = useQuery<TiktokSource[]>({
+    queryKey: ["/api/tiktok-sources"]
   });
 
   // Generate AI descriptions for pending items
@@ -100,242 +73,232 @@ export default function Dashboard() {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-text-black">Dashboard</h2>
-            <p className="text-gray-600">Manage your YouTube content automation</p>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Welcome to ContentBot - Your YouTube Automation Platform</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button 
-              onClick={() => fetchAllMutation.mutate()}
-              disabled={fetchAllMutation.isPending}
-              variant="outline"
-              className="border-youtube-red text-youtube-red hover:bg-youtube-red hover:text-white"
-            >
-              <Download size={16} className="mr-2" />
-              {fetchAllMutation.isPending ? "Fetching..." : "Fetch Reddit Content"}
-            </Button>
-            <Button 
+          <div className="flex space-x-3">
+            <Button
               onClick={() => generateAIMutation.mutate()}
               disabled={generateAIMutation.isPending}
-              className="bg-success-green hover:bg-green-600 text-white"
+              variant="outline"
             >
-              <Brain size={16} className="mr-2" />
+              <Brain className="mr-2 h-4 w-4" />
               {generateAIMutation.isPending ? "Generating..." : "Generate AI Descriptions"}
             </Button>
-            <div className="relative">
-              <Button variant="ghost" size="sm">
-                <Bell size={16} />
-              </Button>
-              <span className="absolute -top-1 -right-1 bg-youtube-red text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {contentItems.filter(item => item.status === "pending").length}
-              </span>
-            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="p-6 overflow-y-auto h-full">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Main Content */}
+      <div className="p-6 space-y-6">
+        {/* Stats Section */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Videos Generated"
-            value={statsLoading ? "..." : stats?.videosGenerated || 0}
-            icon={<Video className="text-youtube-red" size={20} />}
+            value={statsLoading ? "..." : (stats?.videosGenerated || 0)}
+            icon={<Video className="text-white" />}
+            iconBgColor="bg-youtube-red"
             trend={{
               value: "+12%",
+              label: "from last week",
+              positive: true
+            }}
+          />
+          <StatsCard
+            title="TikTok Sources"
+            value={statsLoading ? "..." : tiktokSources.length}
+            icon={<FaTiktok className="text-white" />}
+            iconBgColor="bg-black"
+            trend={{
+              value: "+2",
+              label: "new sources",
+              positive: true
+            }}
+          />
+          <StatsCard
+            title="Success Rate"
+            value={statsLoading ? "..." : `${stats?.successRate || 85}%`}
+            icon={<CheckCircle className="text-white" />}
+            iconBgColor="bg-green-500"
+            trend={{
+              value: "+5%",
               label: "from last month",
               positive: true
             }}
-            iconBgColor="bg-youtube-red bg-opacity-10"
           />
-          
-          <StatsCard
-            title="Reddit Sources"
-            value={statsLoading ? "..." : stats?.redditSources || 0}
-            icon={<FaReddit className="text-orange-500" size={20} />}
-            trend={{
-              value: "+2",
-              label: "new this week",
-              positive: true
-            }}
-            iconBgColor="bg-orange-100"
-          />
-          
-          <StatsCard
-            title="Success Rate"
-            value={statsLoading ? "..." : `${(stats?.successRate || 0).toFixed(1)}%`}
-            icon={<CheckCircle className="text-success-green" size={20} />}
-            trend={{
-              value: "+1.3%",
-              label: "improvement",
-              positive: true
-            }}
-            iconBgColor="bg-success-green bg-opacity-10"
-          />
-          
           <StatsCard
             title="Queue Length"
-            value={statsLoading ? "..." : stats?.queueLength || 0}
-            icon={<Clock className="text-accent-blue" size={20} />}
+            value={statsLoading ? "..." : (stats?.queueLength || contentItems.length)}
+            icon={<Clock className="text-white" />}
+            iconBgColor="bg-orange-500"
             trend={{
-              value: "Ready to post",
-              label: "",
-              positive: true
+              value: "3",
+              label: "pending approval",
+              positive: false
             }}
-            iconBgColor="bg-accent-blue bg-opacity-10"
           />
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Content Queue */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Content Queue</CardTitle>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" className="text-accent-blue">
-                      View All
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <RefreshCw size={16} />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {contentLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-blue mx-auto"></div>
-                    <p className="text-gray-500 mt-2">Loading content...</p>
-                  </div>
-                ) : recentItems.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No content items yet</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Fetch some videos from Reddit to get started
-                    </p>
-                  </div>
-                ) : (
-                  recentItems.map((item) => (
-                    <ContentCard
-                      key={item.id}
-                      id={item.id}
-                      title={item.title}
-                      source={item.redditSourceId.toString()} // This should be the subreddit name
-                      upvotes={item.upvotes}
-                      aiDescription={item.aiDescription || undefined}
-                      status={item.status}
-                      thumbnailUrl={item.thumbnailUrl || undefined}
-                      duration={item.duration || undefined}
-                      scheduledAt={item.scheduledAt?.toString()}
-                      createdAt={item.createdAt.toString()}
-                    />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        {/* Action Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <RefreshCw className="mr-2 h-5 w-5" />
+                TikTok Content
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Fetch trending content from your TikTok hashtag sources
+              </p>
+              <Button 
+                className="w-full"
+                onClick={() => window.location.href = '/tiktok-sources'}
+              >
+                <Hash className="mr-2 h-4 w-4" />
+                Manage TikTok Sources
+              </Button>
+            </CardContent>
+          </Card>
 
-          {/* Sidebar Widgets */}
-          <div className="space-y-6">
-            {/* Active Sources */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Sources</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {sourcesLoading ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-blue mx-auto"></div>
-                  </div>
-                ) : redditSources.length === 0 ? (
-                  <div className="text-center py-4">
-                    <FaReddit className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No Reddit sources</p>
-                  </div>
-                ) : (
-                  redditSources.map((source: any) => (
-                    <div key={source.id} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <FaReddit className="text-orange-500" size={16} />
-                        <span className="text-sm font-medium">r/{source.subreddit}</span>
+          {/* Content Sources */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <FaTiktok className="mr-2 h-5 w-5" />
+                Active Sources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {sourcesLoading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ) : tiktokSources.length === 0 ? (
+                <div className="text-center py-4">
+                  <FaTiktok className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-3">No TikTok sources configured</p>
+                  <Button 
+                    size="sm" 
+                    onClick={() => window.location.href = '/tiktok-sources'}
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add Hashtag
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {tiktokSources.slice(0, 3).map((source) => (
+                    <div key={source.id} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex items-center">
+                        <Hash className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-sm font-medium">#{source.hashtag}</span>
                       </div>
-                      <Badge 
-                        variant="secondary"
-                        className={source.isActive 
-                          ? "bg-success-green bg-opacity-20 text-success-green" 
-                          : "bg-warning-yellow bg-opacity-20 text-warning-yellow"
-                        }
-                      >
-                        <div className={`w-2 h-2 rounded-full mr-1 ${
-                          source.isActive ? "bg-success-green" : "bg-warning-yellow"
-                        }`}></div>
+                      <Badge variant={source.isActive ? "default" : "secondary"}>
                         {source.isActive ? "Active" : "Paused"}
                       </Badge>
                     </div>
-                  ))
-                )}
-                <Button variant="outline" className="w-full mt-4" size="sm">
-                  <Plus size={16} className="mr-2" />
-                  Add New Source
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* AI Generation Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Generation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-accent-blue bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Brain className="text-accent-blue" size={24} />
-                  </div>
-                  <h4 className="font-medium text-text-black mb-2">AI Status</h4>
-                  <p className="text-sm text-gray-600 mb-4">Google Gemini 2.5 Flash connected and ready</p>
-                  <div className="bg-light-grey rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">API Usage</span>
-                      <span className="font-medium">67%</span>
-                    </div>
-                    <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
-                      <div className="bg-accent-blue h-2 rounded-full" style={{ width: "67%" }}></div>
-                    </div>
-                  </div>
-                  <Button className="w-full bg-accent-blue hover:bg-blue-700">
-                    Configure AI
-                  </Button>
+                  ))}
+                  {tiktokSources.length > 3 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      +{tiktokSources.length - 3} more sources
+                    </p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full bg-youtube-red hover:bg-red-700 text-white">
-                  <RefreshCw size={16} className="mr-2" />
-                  Refresh Reddit Feed
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Bot size={16} className="mr-2" />
-                  Bulk Generate
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Upload size={16} className="mr-2" />
-                  Post to YouTube
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {/* AI Generator */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Bot className="mr-2 h-5 w-5" />
+                AI Generator
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Generate YouTube descriptions using Gemini AI
+              </p>
+              <Button 
+                className="w-full"
+                onClick={() => window.location.href = '/ai-generator'}
+                variant="outline"
+              >
+                <Brain className="mr-2 h-4 w-4" />
+                Open AI Generator
+              </Button>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Recent Content */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center text-lg">
+                <Video className="mr-2 h-5 w-5" />
+                Recent Content
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/preview-queue'}
+              >
+                View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {contentLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse flex space-x-4">
+                    <div className="rounded bg-gray-200 h-20 w-32"></div>
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentItems.length === 0 ? (
+              <div className="text-center py-8">
+                <Video className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No content yet</h3>
+                <p className="text-gray-600 mb-4">
+                  Start by adding TikTok hashtag sources to fetch trending content
+                </p>
+                <Button onClick={() => window.location.href = '/tiktok-sources'}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add TikTok Source
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentItems.map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    source={item.tiktokSourceId ? "TikTok" : "Unknown"}
+                    upvotes={item.upvotes}
+                    aiDescription={item.aiDescription}
+                    status={item.status}
+                    thumbnailUrl={item.thumbnailUrl}
+                    duration={item.duration}
+                    scheduledAt={item.scheduledAt?.toString()}
+                    createdAt={item.createdAt.toString()}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </>
   );

@@ -55,7 +55,7 @@ export interface IStorage {
   // Stats
   getStats(userId: number): Promise<{
     videosGenerated: number;
-    redditSources: number;
+    tiktokSources: number;
     successRate: number;
     queueLength: number;
   }>;
@@ -426,12 +426,12 @@ export class DatabaseStorage implements IStorage {
   // Stats
   async getStats(userId: number): Promise<{
     videosGenerated: number;
-    redditSources: number;
+    tiktokSources: number;
     successRate: number;
     queueLength: number;
   }> {
     const totalItems = await db.select().from(contentItems).where(eq(contentItems.userId, userId));
-    const totalSources = await db.select().from(redditSources).where(eq(redditSources.userId, userId));
+    const totalSources = await db.select().from(tiktokSources).where(eq(tiktokSources.userId, userId));
     const approvedItems = await db.select().from(contentItems).where(
       and(eq(contentItems.userId, userId), eq(contentItems.status, "approved"))
     );
@@ -444,7 +444,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       videosGenerated: approvedCount,
-      redditSources: totalSources.length,
+      tiktokSources: totalSources.length,
       successRate: totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0,
       queueLength: pendingItems.length
     };
