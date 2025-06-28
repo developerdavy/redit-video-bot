@@ -235,8 +235,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { title, content, source } = req.body;
       
+      console.log("YouTube optimize request:", { id, title: !!title, content: !!content, source: !!source });
+      console.log("Request body:", req.body);
+      
       if (!title || !content || !source) {
-        return res.status(400).json({ error: "Title, content, and source are required" });
+        return res.status(400).json({ 
+          error: "Title, content, and source are required",
+          received: { title: !!title, content: !!content, source: !!source }
+        });
       }
 
       const youtubeContent = await geminiService.generateYouTubeContent(title, content, source);
