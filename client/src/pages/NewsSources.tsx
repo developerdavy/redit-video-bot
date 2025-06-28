@@ -77,10 +77,7 @@ export default function NewsSources() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return apiRequest("/api/news-sources", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/news-sources", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news-sources"] });
@@ -102,9 +99,7 @@ export default function NewsSources() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/news-sources/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/news-sources/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news-sources"] });
@@ -124,11 +119,10 @@ export default function NewsSources() {
 
   const fetchMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/news-sources/${id}/fetch`, {
-        method: "POST",
-      });
+      return apiRequest("POST", `/api/news-sources/${id}/fetch`);
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
+      const data = await response.json();
       queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
       toast({
         title: "Content fetched",
@@ -146,10 +140,7 @@ export default function NewsSources() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      return apiRequest(`/api/news-sources/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({ isActive }),
-      });
+      return apiRequest("PUT", `/api/news-sources/${id}`, { isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news-sources"] });

@@ -51,14 +51,15 @@ export default function PreviewQueue() {
             key={item.id}
             id={item.id}
             title={item.title}
-            source={item.redditSourceId.toString()} // This should be the subreddit name
-            upvotes={item.upvotes}
+            source={item.sourceName}
+            content={item.content}
+            url={item.url}
+            imageUrl={item.imageUrl || undefined}
+            publishedAt={item.publishedAt ? new Date(item.publishedAt).toISOString() : undefined}
             aiDescription={item.aiDescription || undefined}
             status={item.status}
-            thumbnailUrl={item.thumbnailUrl || undefined}
-            duration={item.duration || undefined}
-            scheduledAt={item.scheduledAt?.toString()}
-            createdAt={item.createdAt.toString()}
+            scheduledAt={item.scheduledAt ? new Date(item.scheduledAt).toISOString() : undefined}
+            createdAt={new Date(item.createdAt).toISOString()}
           />
         ))}
       </div>

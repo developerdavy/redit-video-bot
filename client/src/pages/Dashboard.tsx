@@ -19,11 +19,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { ContentItem, NewsSource } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: stats, isLoading: statsLoading } = useQuery<{
     articlesGenerated: number;
@@ -251,7 +253,7 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => window.location.href = '/preview-queue'}
+                onClick={() => setLocation('/preview-queue')}
               >
                 View All
               </Button>
