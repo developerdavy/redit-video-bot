@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Youtube, Sparkles, Copy, Check } from "lucide-react";
+import { Youtube, Sparkles, Copy, Check, Video, Play, Download, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ export default function YouTubeOptimizer({
   const { toast } = useToast();
   const [optimizedContent, setOptimizedContent] = useState<YouTubeContent | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [generatedVideo, setGeneratedVideo] = useState<{ videoPath: string; duration: number } | null>(null);
 
   const generateMutation = useMutation<YouTubeContent>({
     mutationFn: async (): Promise<YouTubeContent> => {
@@ -63,6 +64,46 @@ export default function YouTubeOptimizer({
       toast({
         title: "Error",
         description: `Failed to optimize content: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const videoMutation = useMutation<{ videoPath: string; duration: number }>({
+    mutationFn: async (): Promise<{ videoPath: string; duration: number }> => {
+      if (!optimizedContent) {
+        throw new Error("Please optimize content first");
+      }
+      
+      const response = await fetch(`/api/content-items/${id}/generate-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: optimizedContent.title,
+          content,
+          hook: optimizedContent.hook,
+          thumbnailText: optimizedContent.thumbnail_text
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate video");
+      }
+      
+      const data = await response.json();
+      return { videoPath: data.videoPath, duration: data.duration };
+    },
+    onSuccess: (data) => {
+      setGeneratedVideo(data);
+      toast({
+        title: "Success",
+        description: `Video generated successfully! Duration: ${Math.round(data.duration)}s`
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
         variant: "destructive"
       });
     }
@@ -295,6 +336,86 @@ export default function YouTubeOptimizer({
                   </CardContent>
                 </Card>
 
+                {/* Video Generation Section */}
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center space-x-2">
+                      <Video className="text-green-600" size={20} />
+                      <span>Generate Video</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {!generatedVideo ? (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Create a complete video from your optimized content with engaging visuals and text overlays.
+                        </p>
+                        <Button 
+                          onClick={() => videoMutation.mutate()}
+                          disabled={videoMutation.isPending}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {videoMutation.isPending ? (
+                            <>
+                              <Loader2 size={16} className="mr-2 animate-spin" />
+                              Generating Video...
+                            </>
+                          ) : (
+                            <>
+                              <Video size={16} className="mr-2" />
+                              Create Video
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                          <div className="flex items-center space-x-3">
+                            <Play className="text-green-600" size={20} />
+                            <div>
+                              <p className="font-medium text-sm">Video Ready!</p>
+                              <p className="text-xs text-gray-600">Duration: {Math.round(generatedVideo.duration)}s</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(`/videos/${generatedVideo.videoPath}`, '_blank')}
+                            >
+                              <Play size={14} className="mr-1" />
+                              Watch
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `/videos/${generatedVideo.videoPath}`;
+                                link.download = generatedVideo.videoPath;
+                                link.click();
+                              }}
+                            >
+                              <Download size={14} className="mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => videoMutation.mutate()}
+                          disabled={videoMutation.isPending}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <Video size={16} className="mr-2" />
+                          Generate New Video
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 <Button 
                   onClick={() => generateMutation.mutate()}
                   disabled={generateMutation.isPending}
@@ -302,7 +423,7 @@ export default function YouTubeOptimizer({
                   className="w-full"
                 >
                   <Sparkles size={16} className="mr-2" />
-                  Generate New Version
+                  Generate New Optimization
                 </Button>
               </div>
             )}

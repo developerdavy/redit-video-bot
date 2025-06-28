@@ -1,9 +1,11 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { newsService } from "./services/news";
 import { geminiService } from "./services/gemini";
 import { youtubeService } from "./services/youtube";
+import { videoGenerationService } from "./services/video-text";
 import { insertNewsSourceSchema, insertContentItemSchema, insertCampaignSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -369,6 +371,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: `Failed to upload to YouTube: ${(error as Error).message}` });
     }
   });
+
+  // Video Generation from Articles
+  app.post("/api/content-items/:id/generate-video", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, content, hook, thumbnailText } = req.body;
+      
+      if (!title || !content) {
+        return res.status(400).json({ error: "Title and content are required" });
+      }
+
+      const videoResult = await videoGenerationService.generateVideo({
+        title,
+        content,
+        hook: hook || `Breaking: ${title}`,
+        thumbnailText: thumbnailText || title
+      });
+      
+      // Update content item with video path
+      await storage.updateContentItem(id, {
+        status: "video_generated"
+      });
+      
+      res.json({
+        success: true,
+        videoPath: videoResult.relativePath,
+        duration: videoResult.duration,
+        message: "Video generated successfully"
+      });
+    } catch (error) {
+      console.error("Error generating video:", error);
+      res.status(500).json({ error: `Failed to generate video: ${(error as Error).message}` });
+    }
+  });
+
+  // Serve generated videos
+  app.use("/videos", (req, res, next) => {
+    // Basic security: only serve .mp4 files
+    if (!req.path.endsWith('.mp4')) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    next();
+  }, express.static('./generated-videos'));
 
   return httpServer;
 }
