@@ -99,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!articles || articles.length === 0) {
         return res.status(400).json({ 
-          error: "Unable to fetch news articles. Please check your API key and try again." 
+          error: `No articles found for ${source.category} category${source.keywords ? ` with keywords "${source.keywords}"` : ''}. Try removing keywords or selecting a different category.` 
         });
       }
       
