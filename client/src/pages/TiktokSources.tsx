@@ -41,13 +41,7 @@ export default function TiktokSources() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await fetch("/api/tiktok-sources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to create TikTok source");
-      return response.json();
+      return apiRequest("POST", "/api/tiktok-sources", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
@@ -69,13 +63,7 @@ export default function TiktokSources() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      const response = await fetch(`/api/tiktok-sources/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive }),
-      });
-      if (!response.ok) throw new Error("Failed to update TikTok source");
-      return response.json();
+      return apiRequest("PATCH", `/api/tiktok-sources/${id}`, { isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
@@ -95,11 +83,7 @@ export default function TiktokSources() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/tiktok-sources/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete TikTok source");
-      return response.json();
+      return apiRequest("DELETE", `/api/tiktok-sources/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
@@ -119,11 +103,7 @@ export default function TiktokSources() {
 
   const fetchMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/tiktok-sources/${id}/fetch`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to fetch TikTok content");
-      return response.json() as Promise<{ fetched: number; total: number }>;
+      return apiRequest("POST", `/api/tiktok-sources/${id}/fetch`) as Promise<{ fetched: number; total: number }>;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/content-items"] });
