@@ -10,6 +10,20 @@ interface VideoOptions {
   thumbnailText: string;
 }
 
+interface ArticleData {
+  title: string;
+  content: string;
+  source: string;
+  publishedAt: string;
+}
+
+interface CompilationVideoOptions {
+  articles: ArticleData[];
+  compilationTitle: string;
+  hook: string;
+  thumbnailText: string;
+}
+
 export class VideoGenerationService {
   private outputDir = './generated-videos';
 
@@ -258,6 +272,95 @@ export class VideoGenerationService {
         })
         .run();
     });
+  }
+
+  async generateCompilationVideo(options: CompilationVideoOptions): Promise<{ videoPath: string; duration: number; relativePath: string }> {
+    const videoId = `compilation_${Date.now()}`;
+    const outputPath = join(this.outputDir, `${videoId}.mp4`);
+    
+    try {
+      // Create slides for compilation video
+      const slides = this.createCompilationSlides(options);
+      const slidePaths = await this.generateSlideImages(slides, videoId);
+      
+      // Compose video with slides
+      const duration = await this.createSlideshowVideo(slidePaths, outputPath);
+      
+      return {
+        videoPath: outputPath,
+        duration,
+        relativePath: `${videoId}.mp4`
+      };
+    } catch (error) {
+      console.error('Compilation video generation failed:', error);
+      throw new Error(`Compilation video generation failed: ${(error as Error).message}`);
+    }
+  }
+
+  private createCompilationSlides(options: CompilationVideoOptions) {
+    const { articles, compilationTitle, hook, thumbnailText } = options;
+    
+    const slides = [
+      // Opening slide with hook
+      {
+        type: 'title',
+        text: hook,
+        background: 'gradient-red',
+        duration: 3
+      },
+      // Main title slide
+      {
+        type: 'title', 
+        text: compilationTitle,
+        background: 'gradient-blue',
+        duration: 4
+      }
+    ];
+
+    // Add slides for each article
+    articles.forEach((article, index) => {
+      // Article number slide
+      slides.push({
+        type: 'number',
+        text: `#${index + 1}`,
+        background: 'gradient-purple',
+        duration: 2
+      });
+      
+      // Article title slide
+      slides.push({
+        type: 'subtitle',
+        text: article.title,
+        background: 'gradient-blue',
+        duration: 5
+      });
+      
+      // Article content slide
+      slides.push({
+        type: 'content',
+        text: article.content,
+        background: 'gradient-green',
+        duration: 6
+      });
+      
+      // Source attribution slide
+      slides.push({
+        type: 'source',
+        text: `Source: ${article.source}`,
+        background: 'gradient-gray',
+        duration: 2
+      });
+    });
+
+    // Closing slide with thumbnail text
+    slides.push({
+      type: 'closing',
+      text: thumbnailText,
+      background: 'gradient-red',
+      duration: 4
+    });
+
+    return slides;
   }
 }
 

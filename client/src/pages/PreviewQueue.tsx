@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContentCard from "@/components/ContentCard";
-import { Eye, Filter, RefreshCw } from "lucide-react";
+import CompilationVideoGenerator from "@/components/CompilationVideoGenerator";
+import { Eye, Filter, RefreshCw, Video } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
 
 export default function PreviewQueue() {
@@ -76,6 +77,12 @@ export default function PreviewQueue() {
             <p className="text-gray-600">Review and manage your content before posting</p>
           </div>
           <div className="flex items-center space-x-2">
+            <CompilationVideoGenerator>
+              <Button className="bg-red-600 hover:bg-red-700 text-white">
+                <Video size={16} className="mr-2" />
+                Create Compilation Video
+              </Button>
+            </CompilationVideoGenerator>
             <Button variant="outline">
               <Filter size={16} className="mr-2" />
               Filter

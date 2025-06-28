@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { newsService } from "./services/news";
 import { geminiService } from "./services/gemini";
 import { youtubeService } from "./services/youtube";
-import { videoGenerationService } from "./services/video-text";
+import { videoGenerationService } from "./services/video-simple";
 import { insertNewsSourceSchema, insertContentItemSchema, insertCampaignSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -409,6 +409,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating video:", error);
       res.status(500).json({ error: `Failed to generate video: ${(error as Error).message}` });
+    }
+  });
+
+  // Compilation Video Generation
+  app.post("/api/content-items/generate-compilation", async (req, res) => {
+    try {
+      const { articleIds, compilationTitle, hook, thumbnailText } = req.body;
+      
+      if (!Array.isArray(articleIds) || articleIds.length === 0) {
+        return res.status(400).json({ error: "Article IDs array is required" });
+      }
+      
+      if (!compilationTitle || !hook || !thumbnailText) {
+        return res.status(400).json({ error: "Compilation title, hook, and thumbnail text are required" });
+      }
+
+      // Fetch the articles data
+      const articles = [];
+      for (const articleId of articleIds) {
+        const article = await storage.getContentItem(articleId);
+        if (article) {
+          articles.push({
+            title: article.title,
+            content: article.content,
+            source: article.sourceName,
+            publishedAt: article.publishedAt ? article.publishedAt.toISOString() : new Date().toISOString()
+          });
+        }
+      }
+
+      if (articles.length === 0) {
+        return res.status(400).json({ error: "No valid articles found" });
+      }
+
+      // For now, generate a compilation by creating a single video with combined content
+      const combinedContent = articles.map((article, index) => 
+        `${index + 1}. ${article.title}\n${article.content}\nSource: ${article.source}\n`
+      ).join('\n---\n');
+
+      const result = await videoGenerationService.generateVideo({
+        title: compilationTitle,
+        content: combinedContent,
+        hook,
+        thumbnailText
+      });
+      
+      res.json({ 
+        success: true, 
+        videoPath: result.relativePath,
+        duration: result.duration,
+        articleCount: articles.length,
+        message: `Compilation video generated successfully! ${articles.length} articles, ${Math.round(result.duration)}s duration`
+      });
+    } catch (error) {
+      console.error("Error generating compilation video:", error);
+      res.status(500).json({ error: `Failed to generate compilation video: ${(error as Error).message}` });
     }
   });
 
