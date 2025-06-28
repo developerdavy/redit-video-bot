@@ -76,12 +76,40 @@ export class NewsService {
 
       const data = await this.makeRequest(endpoint);
       
+      // If no articles found with keywords, try without keywords as fallback
+      if ((!data.articles || data.articles.length === 0) && keywords) {
+        console.log('No articles found with keywords, trying without keywords as fallback');
+        let fallbackEndpoint = `/top-headlines?country=${country}&pageSize=${limit}`;
+        if (category && category !== 'general') {
+          fallbackEndpoint += `&category=${category}`;
+        }
+        const fallbackData = await this.makeRequest(fallbackEndpoint);
+        
+        if (fallbackData.articles && fallbackData.articles.length > 0) {
+          const articles = fallbackData.articles
+            .filter(article => article.title && article.url && article.title !== '[Removed]')
+            .slice(0, limit)
+            .map(article => ({
+              id: article.url,
+              title: article.title,
+              content: article.description || article.content || '',
+              url: article.url,
+              imageUrl: article.urlToImage,
+              publishedAt: article.publishedAt,
+              source: article.source.name
+            }));
+          
+          console.log(`Found ${articles.length} articles in ${category} category without keywords`);
+          return articles;
+        }
+      }
+      
       if (!data.articles || data.articles.length === 0) {
         console.log('No articles found in NewsAPI response');
         return [];
       }
 
-      return data.articles
+      const articles = data.articles
         .filter(article => article.title && article.url && article.title !== '[Removed]')
         .slice(0, limit)
         .map(article => ({
@@ -93,6 +121,9 @@ export class NewsService {
           publishedAt: article.publishedAt,
           source: article.source.name
         }));
+
+      console.log(`Found ${articles.length} articles`);
+      return articles;
     } catch (error) {
       console.error('Error fetching news articles:', error);
       throw new Error(`Failed to fetch news articles: ${error}`);
