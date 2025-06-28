@@ -215,6 +215,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const videos = await tiktokService.getTrendingVideos(source.hashtag, 10);
       
+      if (!videos || videos.length === 0) {
+        return res.status(400).json({ 
+          error: "Unable to fetch TikTok videos. Please check your API credentials and try again." 
+        });
+      }
+      
       let fetched = 0;
       for (const video of videos) {
         try {
@@ -241,9 +247,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json({ fetched, total: videos.length });
+      res.json({ 
+        fetched, 
+        total: videos.length,
+        message: `Successfully fetched ${fetched} new videos from TikTok hashtag #${source.hashtag}`
+      });
     } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
+      res.status(500).json({ 
+        error: `Failed to fetch TikTok content: ${(error as Error).message}` 
+      });
     }
   });
 
