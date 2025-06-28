@@ -6,6 +6,7 @@ import { Eye, Check, X, Clock, Calendar } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import ContentDetailModal from "./ContentDetailModal";
 
 interface ContentCardProps {
   id: number;
@@ -180,9 +181,23 @@ export default function ContentCard({
 
           {/* Actions */}
           <div className="flex-shrink-0 flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="text-accent-blue hover:bg-blue-50">
-              <Eye size={16} />
-            </Button>
+            <ContentDetailModal
+              id={id}
+              title={title}
+              source={source}
+              content={content}
+              url={url}
+              imageUrl={imageUrl}
+              publishedAt={publishedAt}
+              aiDescription={aiDescription}
+              status={status}
+              scheduledAt={scheduledAt}
+              createdAt={createdAt}
+            >
+              <Button variant="ghost" size="sm" className="text-accent-blue hover:bg-blue-50">
+                <Eye size={16} />
+              </Button>
+            </ContentDetailModal>
             
             {status === "pending" && (
               <>

@@ -196,6 +196,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Content Item Actions
+  app.post("/api/content-items/:id/approve", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const item = await storage.updateContentItem(id, { status: "approved" });
+      
+      if (!item) {
+        return res.status(404).json({ error: "Content item not found" });
+      }
+      
+      res.json({ success: true, message: "Content item approved" });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/content-items/:id/reject", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const item = await storage.updateContentItem(id, { status: "rejected" });
+      
+      if (!item) {
+        return res.status(404).json({ error: "Content item not found" });
+      }
+      
+      res.json({ success: true, message: "Content item rejected" });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // AI Description Generation
   app.post("/api/content-items/generate-descriptions", async (req, res) => {
     try {
