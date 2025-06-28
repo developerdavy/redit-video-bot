@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import RedditSources from "@/pages/RedditSources";
+import TiktokSources from "@/pages/TiktokSources";
 import AIGenerator from "@/pages/AIGenerator";
 import PreviewQueue from "@/pages/PreviewQueue";
 import ScheduledPosts from "@/pages/ScheduledPosts";
@@ -18,6 +19,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/reddit-sources" component={RedditSources} />
+        <Route path="/tiktok-sources" component={TiktokSources} />
         <Route path="/ai-generator" component={AIGenerator} />
         <Route path="/preview-queue" component={PreviewQueue} />
         <Route path="/scheduled-posts" component={ScheduledPosts} />

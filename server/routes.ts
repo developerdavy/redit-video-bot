@@ -150,6 +150,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TikTok sources endpoints
+  app.get("/api/tiktok-sources", async (req, res) => {
+    try {
+      const sources = await storage.getTiktokSources(DEMO_USER_ID);
+      res.json(sources);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/tiktok-sources", async (req, res) => {
+    try {
+      const data = insertTiktokSourceSchema.parse({ ...req.body, userId: DEMO_USER_ID });
+      
+      // Skip hashtag validation for now
+      const source = await storage.createTiktokSource(data);
+      res.json(source);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  });
+
+  app.patch("/api/tiktok-sources/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const source = await storage.updateTiktokSource(id, updates);
+      
+      if (!source) {
+        return res.status(404).json({ error: "TikTok source not found" });
+      }
+      
+      res.json(source);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete("/api/tiktok-sources/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteTiktokSource(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "TikTok source not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  });
+
+  // Fetch TikTok content by hashtag
+  app.post("/api/tiktok-sources/:id/fetch", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const source = await storage.getTiktokSource(id);
+      
+      if (!source) {
+        return res.status(404).json({ error: "TikTok source not found" });
+      }
+
+      const videos = await tiktokService.getTrendingVideos(source.hashtag, 10);
+      
+      let fetched = 0;
+      for (const video of videos) {
+        try {
+          // Check if we already have this video
+          const existingItems = await storage.getContentItems(DEMO_USER_ID);
+          const exists = existingItems.find(item => item.sourceId === video.id);
+          
+          if (!exists) {
+            await storage.createContentItem({
+              userId: DEMO_USER_ID,
+              title: video.title,
+              sourceId: video.id,
+              videoUrl: video.url,
+              thumbnailUrl: video.thumbnailUrl,
+              upvotes: video.upvotes,
+              duration: video.duration,
+              status: "pending",
+              tiktokSourceId: source.id,
+            });
+            fetched++;
+          }
+        } catch (error) {
+          console.error(`Error saving TikTok video ${video.id}:`, error);
+        }
+      }
+      
+      res.json({ fetched, total: videos.length });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Content items endpoints
   app.get("/api/content-items", async (req, res) => {
     try {
@@ -259,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subreddit: source.subreddit,
             fetched: 0,
             success: false,
-            error: error.message
+            error: (error as Error).message
           });
         }
       }
