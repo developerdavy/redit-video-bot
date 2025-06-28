@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Video, Play, Download, Loader2, Plus } from "lucide-react";
+import { Video, Play, Download, Loader2, Plus, Sparkles, Brain } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,12 +29,71 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
   const [compilationTitle, setCompilationTitle] = useState("");
   const [hook, setHook] = useState("");
   const [thumbnailText, setThumbnailText] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    compilationTitle: string;
+    hook: string;
+    thumbnailText: string;
+    theme: string;
+    reasoning: string;
+  } | null>(null);
   const [generatedVideo, setGeneratedVideo] = useState<{ videoPath: string; duration: number; articleCount: number } | null>(null);
 
   // Fetch approved content items
   const { data: contentItems = [] } = useQuery<ContentItem[]>({
     queryKey: ["/api/content-items"],
     select: (data) => data.filter((item: ContentItem) => item.status === "approved")
+  });
+
+  const analyzeArticlesMutation = useMutation<{
+    compilationTitle: string;
+    hook: string;
+    thumbnailText: string;
+    theme: string;
+    reasoning: string;
+  }>({
+    mutationFn: async (): Promise<{
+      compilationTitle: string;
+      hook: string;
+      thumbnailText: string;
+      theme: string;
+      reasoning: string;
+    }> => {
+      if (selectedArticles.length === 0) {
+        throw new Error("Please select at least one article");
+      }
+
+      const response = await fetch("/api/content-items/analyze-compilation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articleIds: selectedArticles
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to analyze articles");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setAiAnalysis(data);
+      setCompilationTitle(data.compilationTitle);
+      setHook(data.hook);
+      setThumbnailText(data.thumbnailText);
+      toast({
+        title: "AI Analysis Complete",
+        description: `Optimized compilation settings generated based on ${data.theme}`
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Analysis Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   const generateCompilationMutation = useMutation<{ videoPath: string; duration: number; articleCount: number }>({
@@ -177,19 +236,56 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center justify-between">
                     Compilation Settings
-                    {selectedArticles.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={generateSuggestedContent}
-                      >
-                        <Plus size={14} className="mr-1" />
-                        Suggest
-                      </Button>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {selectedArticles.length > 0 && (
+                        <Button
+                          onClick={() => analyzeArticlesMutation.mutate()}
+                          disabled={analyzeArticlesMutation.isPending}
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          {analyzeArticlesMutation.isPending ? (
+                            <>
+                              <Loader2 size={14} className="mr-1 animate-spin" />
+                              AI Analysis
+                            </>
+                          ) : (
+                            <>
+                              <Brain size={14} className="mr-1" />
+                              AI Optimize
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {selectedArticles.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={generateSuggestedContent}
+                        >
+                          <Plus size={14} className="mr-1" />
+                          Quick
+                        </Button>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {aiAnalysis && (
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Sparkles className="text-purple-600" size={16} />
+                        <h4 className="font-medium text-purple-800">AI Analysis Complete</h4>
+                      </div>
+                      <p className="text-sm text-purple-700 mb-2">
+                        <strong>Theme:</strong> {aiAnalysis.theme}
+                      </p>
+                      <p className="text-sm text-purple-600">
+                        {aiAnalysis.reasoning}
+                      </p>
+                    </div>
+                  )}
+                  
                   <div>
                     <Label htmlFor="compilationTitle">Video Title *</Label>
                     <Input
@@ -292,6 +388,7 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
                       setCompilationTitle("");
                       setHook("");
                       setThumbnailText("");
+                      setAiAnalysis(null);
                     }}
                     variant="outline"
                     className="w-full"

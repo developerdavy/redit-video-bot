@@ -412,6 +412,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Analysis for Compilation Settings
+  app.post("/api/content-items/analyze-compilation", async (req, res) => {
+    try {
+      const { articleIds } = req.body;
+      
+      if (!Array.isArray(articleIds) || articleIds.length === 0) {
+        return res.status(400).json({ error: "Article IDs array is required" });
+      }
+
+      // Fetch the articles data
+      const articles = [];
+      for (const articleId of articleIds) {
+        const article = await storage.getContentItem(articleId);
+        if (article) {
+          articles.push({
+            title: article.title,
+            content: article.content,
+            source: article.sourceName,
+            publishedAt: article.publishedAt ? article.publishedAt.toISOString() : new Date().toISOString()
+          });
+        }
+      }
+
+      if (articles.length === 0) {
+        return res.status(400).json({ error: "No valid articles found" });
+      }
+
+      const analysis = await geminiService.analyzeCompilationArticles(articles);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing compilation articles:", error);
+      res.status(500).json({ error: `Failed to analyze articles: ${(error as Error).message}` });
+    }
+  });
+
   // Compilation Video Generation
   app.post("/api/content-items/generate-compilation", async (req, res) => {
     try {
