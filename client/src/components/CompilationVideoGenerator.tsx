@@ -39,7 +39,7 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
   const [generatedVideo, setGeneratedVideo] = useState<{ videoPath: string; duration: number; articleCount: number } | null>(null);
 
   // Fetch approved content items
-  const { data: contentItems = [] } = useQuery<ContentItem[]>({
+  const { data: contentItems = [], isLoading } = useQuery<ContentItem[]>({
     queryKey: ["/api/content-items"],
     select: (data) => data.filter((item: ContentItem) => item.status === "approved")
   });
@@ -203,19 +203,24 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
               </CardHeader>
               <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                 {contentItems.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">
-                    No approved articles available. Please approve some articles first.
-                  </p>
+                  <div className="text-center text-gray-500 py-8">
+                    <p className="mb-2">No approved articles available.</p>
+                    <p className="text-sm">Go to Preview Queue and approve some articles first.</p>
+                  </div>
+                ) : contentItems.length < 2 ? (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 mb-3">
+                    ⚠️ Only {contentItems.length} approved article available. You need at least 2 articles for compilation videos. Please approve more articles in the Preview Queue.
+                  </div>
                 ) : (
                   <>
                     {selectedArticles.length === 0 && (
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 mb-3">
-                        💡 <strong>Tip:</strong> Click on any article or checkbox below to select it for your compilation video. Select 2-5 articles for best results.
+                        Click on any article or checkbox below to select it for your compilation video. Select 2-5 articles for best results.
                       </div>
                     )}
                     {selectedArticles.length > 0 && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 mb-3">
-                        ✅ <strong>{selectedArticles.length} articles selected!</strong> Ready to create compilation or use AI optimization.
+                        {selectedArticles.length} articles selected! Ready to create compilation or use AI optimization.
                       </div>
                     )}
                   </>
@@ -229,12 +234,16 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
                           ? 'bg-blue-50 border-blue-300 shadow-sm' 
                           : 'hover:bg-gray-50 border-gray-200'
                       }`}
-                      onClick={() => handleArticleToggle(item.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleArticleToggle(item.id);
+                      }}
                     >
                       <Checkbox
                         checked={selectedArticles.includes(item.id)}
                         onCheckedChange={() => handleArticleToggle(item.id)}
                         className="mt-1"
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.title}</p>
