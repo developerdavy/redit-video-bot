@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
-import TiktokSources from "@/pages/TiktokSources";
+import NewsSources from "@/pages/NewsSources";
 import AIGenerator from "@/pages/AIGenerator";
 import PreviewQueue from "@/pages/PreviewQueue";
 import ScheduledPosts from "@/pages/ScheduledPosts";
@@ -17,7 +17,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/tiktok-sources" component={TiktokSources} />
+        <Route path="/news-sources" component={NewsSources} />
         <Route path="/ai-generator" component={AIGenerator} />
         <Route path="/preview-queue" component={PreviewQueue} />
         <Route path="/scheduled-posts" component={ScheduledPosts} />

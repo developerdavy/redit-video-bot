@@ -2,7 +2,7 @@
 
 ## Overview
 
-ContentBot is a full-stack web application built for automating YouTube content creation from Reddit sources. The system consists of a React frontend with TypeScript, an Express.js backend, and PostgreSQL database with Drizzle ORM. The application enables users to monitor Reddit subreddits, fetch video content, generate AI-powered descriptions using OpenAI, and manage scheduled YouTube uploads.
+ContentBot is a full-stack web application built for automating YouTube content creation from news sources. The system consists of a React frontend with TypeScript, an Express.js backend, and PostgreSQL database with Drizzle ORM. The application enables users to monitor news categories, fetch trending articles via NewsAPI, generate AI-powered descriptions using Gemini AI, and manage scheduled YouTube uploads.
 
 ## System Architecture
 
@@ -47,8 +47,8 @@ Located in `shared/schema.ts` using Drizzle ORM:
 - **Analytics**: Performance metrics and insights
 
 ### Backend Services
-- **Reddit Service**: Fetch video content from Reddit API
-- **OpenAI Service**: Generate YouTube descriptions using GPT-4o
+- **News Service**: Fetch trending articles from NewsAPI
+- **Gemini Service**: Generate YouTube descriptions using Gemini AI
 - **YouTube Service**: Handle video uploads and scheduling (stub implementation)
 - **Storage Interface**: Abstract data access layer for database operations
 
@@ -128,3 +128,7 @@ Preferred communication style: Simple, everyday language.
 - June 28, 2025. Completed migration from Replit Agent to Replit environment with PostgreSQL database
 - June 28, 2025. Successfully configured Gemini API key for AI description generation
 - June 28, 2025. Verified Gemini API is working correctly, TikTok API facing access restrictions
+- June 28, 2025. MAJOR RENOVATION: Completely migrated system from TikTok/Reddit to NewsAPI
+- June 28, 2025. Successfully integrated NewsAPI with free tier (1,000 requests/day)
+- June 28, 2025. Updated all database schemas, services, and frontend to work with news articles
+- June 28, 2025. Verified NewsAPI fetching 10 technology articles successfully

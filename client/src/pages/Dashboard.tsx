@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import StatsCard from "@/components/StatsCard";
 import ContentCard from "@/components/ContentCard";
 import { 
-  Video, 
+  Newspaper, 
   CheckCircle, 
   Clock, 
   Plus, 
@@ -17,18 +17,17 @@ import {
   Download,
   Hash
 } from "lucide-react";
-import { FaTiktok } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { ContentItem, TiktokSource } from "@shared/schema";
+import type { ContentItem, NewsSource } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: stats, isLoading: statsLoading } = useQuery<{
-    videosGenerated: number;
-    tiktokSources: number;
+    articlesGenerated: number;
+    newsSources: number;
     successRate: number;
     queueLength: number;
   }>({
@@ -39,8 +38,8 @@ export default function Dashboard() {
     queryKey: ["/api/content-items"]
   });
 
-  const { data: tiktokSources = [], isLoading: sourcesLoading } = useQuery<TiktokSource[]>({
-    queryKey: ["/api/tiktok-sources"]
+  const { data: newsSources = [], isLoading: sourcesLoading } = useQuery<NewsSource[]>({
+    queryKey: ["/api/news-sources"]
   });
 
   // Generate AI descriptions for pending items
@@ -99,9 +98,9 @@ export default function Dashboard() {
         {/* Stats Section */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
-            title="Videos Generated"
-            value={statsLoading ? "..." : (stats?.videosGenerated || 0)}
-            icon={<Video className="text-white" />}
+            title="Articles Generated"
+            value={statsLoading ? "..." : (stats?.articlesGenerated || 0)}
+            icon={<Newspaper className="text-white" />}
             iconBgColor="bg-youtube-red"
             trend={{
               value: "+12%",
@@ -110,9 +109,9 @@ export default function Dashboard() {
             }}
           />
           <StatsCard
-            title="TikTok Sources"
-            value={statsLoading ? "..." : tiktokSources.length}
-            icon={<FaTiktok className="text-white" />}
+            title="News Sources"
+            value={statsLoading ? "..." : newsSources.length}
+            icon={<Newspaper className="text-white" />}
             iconBgColor="bg-black"
             trend={{
               value: "+2",
@@ -172,7 +171,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center text-lg">
-                <FaTiktok className="mr-2 h-5 w-5" />
+                <Newspaper className="mr-2 h-5 w-5" />
                 Active Sources
               </CardTitle>
             </CardHeader>
@@ -182,34 +181,34 @@ export default function Dashboard() {
                   <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
-              ) : tiktokSources.length === 0 ? (
+              ) : newsSources.length === 0 ? (
                 <div className="text-center py-4">
-                  <FaTiktok className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600 mb-3">No TikTok sources configured</p>
+                  <Newspaper className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-3">No news sources configured</p>
                   <Button 
                     size="sm" 
-                    onClick={() => window.location.href = '/tiktok-sources'}
+                    onClick={() => window.location.href = '/news-sources'}
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Add Hashtag
+                    Add Source
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {tiktokSources.slice(0, 3).map((source) => (
+                  {newsSources.slice(0, 3).map((source: NewsSource) => (
                     <div key={source.id} className="flex items-center justify-between p-2 border rounded">
                       <div className="flex items-center">
-                        <Hash className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm font-medium">#{source.hashtag}</span>
+                        <Newspaper className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-sm font-medium">{source.category}</span>
                       </div>
                       <Badge variant={source.isActive ? "default" : "secondary"}>
                         {source.isActive ? "Active" : "Paused"}
                       </Badge>
                     </div>
                   ))}
-                  {tiktokSources.length > 3 && (
+                  {newsSources.length > 3 && (
                     <p className="text-xs text-gray-500 mt-2">
-                      +{tiktokSources.length - 3} more sources
+                      +{newsSources.length - 3} more sources
                     </p>
                   )}
                 </div>
@@ -246,7 +245,7 @@ export default function Dashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center text-lg">
-                <Video className="mr-2 h-5 w-5" />
+                <Newspaper className="mr-2 h-5 w-5" />
                 Recent Content
               </CardTitle>
               <Button 
@@ -273,14 +272,14 @@ export default function Dashboard() {
               </div>
             ) : recentItems.length === 0 ? (
               <div className="text-center py-8">
-                <Video className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <Newspaper className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No content yet</h3>
                 <p className="text-gray-600 mb-4">
-                  Start by adding TikTok hashtag sources to fetch trending content
+                  Start by adding news sources to fetch trending articles
                 </p>
-                <Button onClick={() => window.location.href = '/tiktok-sources'}>
+                <Button onClick={() => window.location.href = '/news-sources'}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add TikTok Source
+                  Add News Source
                 </Button>
               </div>
             ) : (
@@ -290,14 +289,15 @@ export default function Dashboard() {
                     key={item.id}
                     id={item.id}
                     title={item.title}
-                    source={item.tiktokSourceId ? "TikTok" : "Unknown"}
-                    upvotes={item.upvotes}
-                    aiDescription={item.aiDescription}
+                    source={item.sourceName}
+                    content={item.content}
+                    url={item.url}
+                    imageUrl={item.imageUrl || undefined}
+                    publishedAt={item.publishedAt ? new Date(item.publishedAt).toISOString() : undefined}
+                    aiDescription={item.aiDescription || undefined}
                     status={item.status}
-                    thumbnailUrl={item.thumbnailUrl}
-                    duration={item.duration}
-                    scheduledAt={item.scheduledAt?.toString()}
-                    createdAt={item.createdAt.toString()}
+                    scheduledAt={item.scheduledAt ? new Date(item.scheduledAt).toISOString() : undefined}
+                    createdAt={new Date(item.createdAt).toISOString()}
                   />
                 ))}
               </div>

@@ -11,11 +11,12 @@ interface ContentCardProps {
   id: number;
   title: string;
   source: string;
-  upvotes: number;
+  content: string;
+  url: string;
+  imageUrl?: string;
+  publishedAt?: string;
   aiDescription?: string;
   status: string;
-  thumbnailUrl?: string;
-  duration?: number;
   scheduledAt?: string;
   createdAt: string;
 }
@@ -24,11 +25,12 @@ export default function ContentCard({
   id,
   title,
   source,
-  upvotes,
+  content,
+  url,
+  imageUrl,
+  publishedAt,
   aiDescription,
   status,
-  thumbnailUrl,
-  duration,
   scheduledAt,
   createdAt
 }: ContentCardProps) {
@@ -42,7 +44,7 @@ export default function ContentCard({
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({
         title: "Success",
-        description: "Video approved and ready for scheduling"
+        description: "Article approved and ready for scheduling"
       });
     },
     onError: (error) => {
@@ -61,7 +63,7 @@ export default function ContentCard({
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({
         title: "Success",
-        description: "Video rejected and removed from queue"
+        description: "Article rejected and removed from queue"
       });
     },
     onError: (error) => {
@@ -128,12 +130,12 @@ export default function ContentCard({
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start space-x-4">
-          {/* Thumbnail */}
+          {/* Article Image */}
           <div className="flex-shrink-0">
             <div className="w-24 h-16 bg-gray-200 rounded-lg overflow-hidden relative">
-              {thumbnailUrl ? (
+              {imageUrl ? (
                 <img 
-                  src={thumbnailUrl} 
+                  src={imageUrl} 
                   alt={title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -146,11 +148,6 @@ export default function ContentCard({
                   <Eye size={20} className="text-gray-500" />
                 </div>
               )}
-              {duration && (
-                <div className="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 rounded">
-                  {formatDuration(duration)}
-                </div>
-              )}
             </div>
           </div>
 
@@ -158,13 +155,19 @@ export default function ContentCard({
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-text-black truncate">{title}</h4>
             <p className="text-sm text-gray-600 mt-1">
-              From r/{source} • {upvotes.toLocaleString()} upvotes
+              From {source} • {publishedAt ? new Date(publishedAt).toLocaleDateString() : 'Recently published'}
+            </p>
+            
+            <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+              {content}
             </p>
             
             {aiDescription && (
-              <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                {aiDescription}
-              </p>
+              <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700 line-clamp-2">
+                  AI: {aiDescription}
+                </p>
+              </div>
             )}
             
             <div className="flex items-center space-x-4 mt-3">

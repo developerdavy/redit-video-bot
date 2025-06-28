@@ -8,18 +8,12 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
-export const redditSources = pgTable("reddit_sources", {
+export const newsSources = pgTable("news_sources", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  subreddit: text("subreddit").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const tiktokSources = pgTable("tiktok_sources", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  hashtag: text("hashtag").notNull(),
+  category: text("category").notNull(), // business, technology, sports, etc.
+  keywords: text("keywords"), // optional search keywords
+  country: text("country").default("us"), // country code for news
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -27,14 +21,14 @@ export const tiktokSources = pgTable("tiktok_sources", {
 export const contentItems = pgTable("content_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  redditSourceId: integer("reddit_source_id"),
-  tiktokSourceId: integer("tiktok_source_id"),
-  sourceId: text("source_id").notNull().unique(), // reddit_id or tiktok_id
+  newsSourceId: integer("news_source_id"),
+  sourceId: text("source_id").notNull().unique(), // news article url or id
   title: text("title").notNull(),
-  videoUrl: text("video_url").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
-  duration: integer("duration"), // in seconds
-  upvotes: integer("upvotes").notNull().default(0),
+  content: text("content").notNull(), // article content
+  url: text("url").notNull(), // original article URL
+  imageUrl: text("image_url"), // article image
+  publishedAt: timestamp("published_at"),
+  sourceName: text("source_name").notNull(), // news source name (CNN, BBC, etc.)
   aiDescription: text("ai_description"),
   status: text("status").notNull().default("pending"), // pending, approved, rejected, posted
   scheduledAt: timestamp("scheduled_at"),
@@ -58,12 +52,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertRedditSourceSchema = createInsertSchema(redditSources).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertTiktokSourceSchema = createInsertSchema(tiktokSources).omit({
+export const insertNewsSourceSchema = createInsertSchema(newsSources).omit({
   id: true,
   createdAt: true,
 });
@@ -83,11 +72,8 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
-export type RedditSource = typeof redditSources.$inferSelect;
-export type InsertRedditSource = z.infer<typeof insertRedditSourceSchema>;
-
-export type TiktokSource = typeof tiktokSources.$inferSelect;
-export type InsertTiktokSource = z.infer<typeof insertTiktokSourceSchema>;
+export type NewsSource = typeof newsSources.$inferSelect;
+export type InsertNewsSource = z.infer<typeof insertNewsSourceSchema>;
 
 export type ContentItem = typeof contentItems.$inferSelect;
 export type InsertContentItem = z.infer<typeof insertContentItemSchema>;

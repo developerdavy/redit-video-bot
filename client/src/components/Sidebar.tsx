@@ -7,14 +7,14 @@ import {
   Bot, 
   Settings,
   User,
-  Plus
+  Plus,
+  Newspaper
 } from "lucide-react";
-import { FaReddit, FaTiktok } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
-  { name: "TikTok Sources", href: "/tiktok-sources", icon: FaTiktok },
+  { name: "News Sources", href: "/news-sources", icon: Newspaper },
   { name: "AI Generator", href: "/ai-generator", icon: Bot },
   { name: "Preview Queue", href: "/preview-queue", icon: Eye },
   { name: "Scheduled Posts", href: "/scheduled-posts", icon: Calendar },
