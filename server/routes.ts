@@ -227,6 +227,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // YouTube Content Optimization
+  app.post("/api/content-items/:id/youtube-optimize", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, content, source } = req.body;
+      
+      if (!title || !content || !source) {
+        return res.status(400).json({ error: "Title, content, and source are required" });
+      }
+
+      const youtubeContent = await geminiService.generateYouTubeContent(title, content, source);
+      
+      res.json(youtubeContent);
+    } catch (error) {
+      console.error("Error optimizing YouTube content:", error);
+      res.status(500).json({ error: `Failed to optimize content: ${(error as Error).message}` });
+    }
+  });
+
   // AI Description Generation
   app.post("/api/content-items/generate-descriptions", async (req, res) => {
     try {

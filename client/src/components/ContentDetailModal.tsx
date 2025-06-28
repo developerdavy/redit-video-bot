@@ -126,7 +126,7 @@ export default function ContentDetailModal({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="content-description">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-text-black pr-8">
             {title}

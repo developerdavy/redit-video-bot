@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // DON'T DELETE THIS COMMENT
 // Follow these instructions when using this blueprint:
@@ -6,92 +6,113 @@ import { GoogleGenAI } from "@google/genai";
 //   - do not change this unless explicitly requested by the user
 
 // This API key is from Gemini Developer API Key, not vertex AI API Key
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export class GeminiService {
-  async generateYouTubeDescription(
+  async generateYouTubeContent(
     title: string, 
-    subreddit: string, 
-    upvotes: number,
-    duration: number
-  ): Promise<string> {
+    content: string, 
+    source: string
+  ): Promise<{ title: string; description: string; tags: string[]; thumbnail_text: string; hook: string }> {
     try {
-      const systemPrompt = `You are a YouTube content creator expert who writes engaging video descriptions that get high engagement rates. 
-Create engaging YouTube video descriptions that maximize views and engagement.
-Respond with JSON in this format: {"description": "your generated description"}`;
+      const systemPrompt = `You are a top YouTube content strategist who creates viral, engaging content that gets millions of views. 
+Your expertise is transforming news articles into compelling YouTube content that captures attention and drives engagement.`;
 
-      const prompt = `Create an engaging YouTube video description for a funny video originally from Reddit. 
+      const prompt = `Transform this news article into engaging YouTube content:
 
-Video Details:
-- Title: ${title}
-- Source: r/${subreddit}
-- Upvotes: ${upvotes}
-- Duration: ${duration} seconds
+Article Title: ${title}
+Content: ${content}
+Source: ${source}
 
-Requirements:
-- Make it engaging and clickable for YouTube audience
-- Include relevant hashtags
-- Mention it's from Reddit but make it YouTube-friendly
-- Keep it under 200 words
-- Include a call-to-action for likes and subscriptions
-- Make it sound natural and enthusiastic
+Create optimized YouTube content with these elements:
 
-Respond with JSON in this format: { "description": "your generated description" }`;
+1. CATCHY TITLE: Rewrite the title to be more engaging, use power words, create curiosity, and appeal to emotions. Make it YouTube-friendly and clickable.
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "object",
-            properties: {
-              description: { type: "string" },
-            },
-            required: ["description"],
-          },
-        },
-        contents: prompt,
-      });
+2. ENGAGING DESCRIPTION: Write a compelling description that:
+   - Hooks viewers in the first 2 lines
+   - Explains why this matters to them
+   - Creates urgency or curiosity
+   - Includes call-to-action for engagement
+   - Uses relevant keywords naturally
+   - 150-200 words
 
-      const rawJson = response.text;
-      console.log(`Raw JSON: ${rawJson}`);
+3. STRATEGIC TAGS: Generate 8-12 relevant tags that help with discovery
 
-      if (rawJson) {
-        const result = JSON.parse(rawJson);
-        return result.description;
-      } else {
-        throw new Error("Empty response from model");
+4. THUMBNAIL TEXT: Suggest 2-4 words for thumbnail overlay that create curiosity
+
+5. OPENING HOOK: Write a compelling 15-20 second opening script that immediately grabs attention
+
+Focus on making content that:
+- Appeals to emotions (surprise, curiosity, concern, excitement)
+- Uses storytelling elements
+- Creates urgency or FOMO
+- Relates to viewer's life
+- Promises value or revelation
+
+Respond with JSON in this exact format:
+{
+  "title": "optimized title",
+  "description": "engaging description",
+  "tags": ["tag1", "tag2", "tag3"],
+  "thumbnail_text": "2-4 words",
+  "hook": "opening script"
+}`;
+
+      const model = genai.getGenerativeModel({ model: "gemini-2.5-flash" });
+      
+      const response = await model.generateContent(`${systemPrompt}\n\n${prompt}`);
+
+      const resultText = response.response.text();
+      
+      // Clean up the response text to extract JSON from markdown code blocks
+      let cleanText = resultText.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
+      
+      const parsed = JSON.parse(cleanText);
+      return {
+        title: parsed.title || title,
+        description: parsed.description || "Failed to generate description",
+        tags: parsed.tags || [],
+        thumbnail_text: parsed.thumbnail_text || "",
+        hook: parsed.hook || ""
+      };
     } catch (error) {
-      console.error('Error generating AI description:', error);
-      throw new Error(`Failed to generate AI description: ${(error as Error).message}`);
+      console.error("Error generating YouTube content:", error);
+      return {
+        title,
+        description: "Failed to generate content",
+        tags: [],
+        thumbnail_text: "",
+        hook: ""
+      };
     }
   }
 
   async generateBulkDescriptions(items: Array<{
     title: string;
-    subreddit: string;
-    upvotes: number;
-    duration: number;
+    content: string;
+    source: string;
   }>): Promise<string[]> {
     const descriptions = [];
     
     for (const item of items) {
       try {
-        const description = await this.generateYouTubeDescription(
+        const youtubeContent = await this.generateYouTubeContent(
           item.title, 
-          item.subreddit, 
-          item.upvotes, 
-          item.duration
+          item.content, 
+          item.source
         );
-        descriptions.push(description);
+        descriptions.push(youtubeContent.description);
         
         // Add small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error(`Failed to generate description for "${item.title}":`, error);
-        descriptions.push(`Hilarious video from r/${item.subreddit}! This ${item.duration}-second clip had ${item.upvotes} upvotes. Don't forget to like and subscribe for more funny content! #funny #reddit #viral`);
+        descriptions.push(`Breaking: ${item.title} - Stay informed with the latest updates from ${item.source}. Like and subscribe for more news content!`);
       }
     }
     

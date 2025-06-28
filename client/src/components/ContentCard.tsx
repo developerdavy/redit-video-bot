@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Check, X, Clock, Calendar } from "lucide-react";
+import { Eye, Check, X, Clock, Calendar, Youtube } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ContentDetailModal from "./ContentDetailModal";
+import YouTubeOptimizer from "./YouTubeOptimizer";
 
 interface ContentCardProps {
   id: number;
@@ -198,6 +199,17 @@ export default function ContentCard({
                 <Eye size={16} />
               </Button>
             </ContentDetailModal>
+            
+            <YouTubeOptimizer
+              id={id}
+              title={title}
+              content={content}
+              source={source}
+            >
+              <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
+                <Youtube size={16} />
+              </Button>
+            </YouTubeOptimizer>
             
             {status === "pending" && (
               <>
