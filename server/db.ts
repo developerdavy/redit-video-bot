@@ -5,15 +5,16 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-// For Replit environment compatibility - allow running without database initially
-let pool: Pool | null = null;
-let db: any = null;
-
-if (process.env.DATABASE_URL) {
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  db = drizzle({ client: pool, schema });
-} else {
-  console.log("DATABASE_URL not set - running with in-memory storage");
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
 }
 
-export { pool, db };
+// Clean up DATABASE_URL format (remove psql command wrapper if present)
+const cleanDatabaseUrl = process.env.DATABASE_URL
+  .replace(/^psql\s+'/, '')
+  .replace(/'$/, '');
+
+export const pool = new Pool({ connectionString: cleanDatabaseUrl });
+export const db = drizzle({ client: pool, schema });
