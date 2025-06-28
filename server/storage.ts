@@ -305,6 +305,7 @@ export class MemStorage implements IStorage {
 // Database Storage Implementation
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
+    if (!db) throw new Error("Database not configured");
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
@@ -491,4 +492,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
