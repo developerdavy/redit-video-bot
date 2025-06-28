@@ -41,10 +41,20 @@ export default function TiktokSources() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return apiRequest("POST", "/api/tiktok-sources", data);
+      console.log("Mutation starting with data:", data);
+      try {
+        const result = await apiRequest("POST", "/api/tiktok-sources", data);
+        console.log("Mutation successful:", result);
+        return result;
+      } catch (error) {
+        console.error("Mutation error:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log("onSuccess triggered:", result);
       queryClient.invalidateQueries({ queryKey: ["/api/tiktok-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -53,6 +63,7 @@ export default function TiktokSources() {
       });
     },
     onError: (error: Error) => {
+      console.error("onError triggered:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -122,6 +133,8 @@ export default function TiktokSources() {
   });
 
   const onSubmit = (data: FormData) => {
+    console.log("Form submission data:", data);
+    console.log("Form validation errors:", form.formState.errors);
     createMutation.mutate(data);
   };
 

@@ -26,7 +26,12 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    videosGenerated: number;
+    tiktokSources: number;
+    successRate: number;
+    queueLength: number;
+  }>({
     queryKey: ["/api/stats"]
   });
 
