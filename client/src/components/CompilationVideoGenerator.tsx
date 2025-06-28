@@ -207,11 +207,34 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
                     No approved articles available. Please approve some articles first.
                   </p>
                 ) : (
+                  <>
+                    {selectedArticles.length === 0 && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 mb-3">
+                        💡 <strong>Tip:</strong> Click on any article or checkbox below to select it for your compilation video. Select 2-5 articles for best results.
+                      </div>
+                    )}
+                    {selectedArticles.length > 0 && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 mb-3">
+                        ✅ <strong>{selectedArticles.length} articles selected!</strong> Ready to create compilation or use AI optimization.
+                      </div>
+                    )}
+                  </>
+                )}
+                {contentItems.length > 0 && (
                   contentItems.map(item => (
-                    <div key={item.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <div 
+                      key={item.id} 
+                      className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                        selectedArticles.includes(item.id) 
+                          ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                          : 'hover:bg-gray-50 border-gray-200'
+                      }`}
+                      onClick={() => handleArticleToggle(item.id)}
+                    >
                       <Checkbox
                         checked={selectedArticles.includes(item.id)}
                         onCheckedChange={() => handleArticleToggle(item.id)}
+                        className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.title}</p>
@@ -221,6 +244,11 @@ export default function CompilationVideoGenerator({ children }: CompilationVideo
                         <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                           {item.content}
                         </p>
+                        {selectedArticles.includes(item.id) && (
+                          <div className="mt-2 text-xs text-blue-600 font-medium">
+                            ✓ Selected for compilation
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
